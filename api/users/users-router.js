@@ -21,36 +21,53 @@ router.get('/', (req, res, next) => {
 });
 
 router.get('/:id', validateUserId,(req, res) => {
-  // RETURN THE USER OBJECT
-  // this needs a middleware to verify user id
-  console.log(req.user)
+  res.status(200).json(req.user)
 });
 
-router.post('/', (req, res) => {
-  // RETURN THE NEWLY CREATED USER OBJECT
-  // this needs a middleware to check that the request body is valid
+router.post('/', validateUser, (req, res, next) => {
+  Users.insert(req.body)
+    .then(newUser => {
+      res.status(201).json(newUser);
+    })
+    .catch(next);
 });
 
-router.put('/:id', validateUserId,(req, res) => {
-  // RETURN THE FRESHLY UPDATED USER OBJECT
-  // this needs a middleware to verify user id
-  // and another middleware to check that the request body is valid
+
+router.put('/:id', validateUserId, validateUser, (req, res, next) => {
+  Users.update(req.params.id, req.body)
+    .then(user => {
+      res.status(200).json(user);
+    })
+    .catch(next)
 });
 
-router.delete('/:id', validateUserId, (req, res) => {
-  // RETURN THE FRESHLY DELETED USER OBJECT
-  // this needs a middleware to verify user id
+
+router.delete('/:id', validateUserId, (req, res, next) => {
+  Users.remove(req.user.id)
+    .then(() => {
+      res.status(200).json(req.user);
+    })
+    .catch(next);
 });
 
-router.get('/:id/posts', validateUserId, (req, res) => {
-  // RETURN THE ARRAY OF USER POSTS
-  // this needs a middleware to verify user id
+router.get("/:id/posts", validateUserId, async (req, res, next) => {
+  try {
+    const posts = await Users.getUserPosts(req.user.id);
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.post('/:id/posts', validateUserId, (req, res) => {
-  // RETURN THE NEWLY CREATED USER POST
-  // this needs a middleware to verify user id
-  // and another middleware to check that the request body is valid
+
+router.post('/:id/posts', validateUserId, validatePost, async (req, res, next) => {
+  const {  text } = req.body;
+  try {
+    const newPost = await Posts.insert({ text, user_id: req.user.id })
+      res.status(201).json(newPost);
+    } catch (err) {
+    next(err);
+  }
 });
 
 router.use(errorHandling);
